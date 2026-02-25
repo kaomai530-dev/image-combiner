@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>3枚合成</title>
+<title>Image Combiner</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Syne+Mono&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -116,22 +116,22 @@
 </head>
 <body>
 
-<h1>3枚 → <span>1枚</span></h1>
-<p class="sub">9:16 比率を保ったまま 1920×1080 に合成</p>
+<h1>3 SHOTS → <span>1 FRAME</span></h1>
+<p class="sub">KEEP 9:16 RATIO · OUTPUT 1920×1080</p>
 
 <div class="slots">
   <div class="slot" id="s0" onclick="pick(0)">
-    <div class="slot-num">1</div><div class="slot-txt">タップして<br>選択</div>
+    <div class="slot-num">1</div><div class="slot-txt">TAP TO<br>SELECT</div>
     <button class="del-btn" onclick="del(event,0)">✕</button>
     <input type="file" id="f0" accept="image/*" onchange="loaded(event,0)">
   </div>
   <div class="slot" id="s1" onclick="pick(1)">
-    <div class="slot-num">2</div><div class="slot-txt">タップして<br>選択</div>
+    <div class="slot-num">2</div><div class="slot-txt">TAP TO<br>SELECT</div>
     <button class="del-btn" onclick="del(event,1)">✕</button>
     <input type="file" id="f1" accept="image/*" onchange="loaded(event,1)">
   </div>
   <div class="slot" id="s2" onclick="pick(2)">
-    <div class="slot-num">3</div><div class="slot-txt">タップして<br>選択</div>
+    <div class="slot-num">3</div><div class="slot-txt">TAP TO<br>SELECT</div>
     <button class="del-btn" onclick="del(event,2)">✕</button>
     <input type="file" id="f2" accept="image/*" onchange="loaded(event,2)">
   </div>
@@ -141,14 +141,14 @@
 
 <div class="card">
   <div>
-    <div class="ctrl-label">余白サイズ（四方均等）</div>
+    <div class="ctrl-label">PADDING SIZE (ALL SIDES)</div>
     <div class="slider-row">
       <input type="range" id="gap" min="0" max="120" value="20" oninput="update()">
       <span class="slider-num" id="gapN">20px</span>
     </div>
   </div>
   <div>
-    <div class="ctrl-label">余白カラー</div>
+    <div class="ctrl-label">PADDING COLOR</div>
     <div class="colors">
       <div class="cp on" style="background:#fff" data-c="#ffffff" onclick="pickColor(this)"></div>
       <div class="cp cp-black" data-c="#000000" onclick="pickColor(this)"></div>
@@ -164,9 +164,9 @@
 </div>
 
 <div id="resultWrap">
-  <div class="result-label">✅ 合成完了 — 1920 × 1080px</div>
-  <img id="resultImg" src="" alt="合成結果">
-  <div class="save-hint">📱 画像を<strong>長押し</strong>すると「写真に保存」が選べます</div>
+  <div class="result-label">✅ DONE — 1920 × 1080px</div>
+  <img id="resultImg" src="" alt="result">
+  <div class="save-hint">📱 <strong>Long press</strong> the image to save it to your photos</div>
 </div>
 
 <canvas id="cv" width="1920" height="1080"></canvas>
@@ -229,11 +229,11 @@
     const filled = imgs.filter(Boolean).length;
     const prog = document.getElementById('prog');
     if (filled < 3) {
-      prog.innerHTML = `画像を選択してください <strong>${filled} / 3</strong>`;
+      prog.innerHTML = `Select all 3 images &nbsp;<strong>${filled} / 3</strong>`;
       document.getElementById('resultWrap').classList.remove('show');
       return;
     }
-    prog.innerHTML = `3枚選択済み <strong>✓</strong>`;
+    prog.innerHTML = `All 3 selected <strong>✓</strong>`;
     render();
   }
 
