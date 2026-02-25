@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>3枚合成</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Syne+Mono&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #111; --surface: #1c1c1c; --border: #2e2e2e;
+    --accent: #e8ff47; --text: #f0f0f0; --muted: #555; --radius: 10px;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Syne', sans-serif;
+    padding: 24px 16px 64px;
+    display: flex; flex-direction: column; gap: 20px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; text-align: center; }
+  h1 span { color: var(--accent); }
+  .sub {
+    font-family: 'Syne Mono', monospace; font-size: 0.65rem;
+    color: var(--muted); text-align: center; letter-spacing: 0.1em; margin-top: -14px;
+  }
+
+  /* Slots */
+  .slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .slot {
+    aspect-ratio: 9/16; background: var(--surface);
+    border: 1.5px dashed var(--border); border-radius: var(--radius);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; overflow: hidden;
+    -webkit-tap-highlight-color: transparent; transition: border-color 0.2s;
+  }
+  .slot.filled { border-color: var(--accent); border-style: solid; }
+  .slot img.thumb {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; border-radius: calc(var(--radius) - 1px); pointer-events: none;
+  }
+  .slot-num { font-size: 1.8rem; font-weight: 800; color: #2e2e2e; }
+  .slot-txt {
+    font-family: 'Syne Mono', monospace; font-size: 0.5rem;
+    color: var(--muted); text-align: center; margin-top: 4px; line-height: 1.5;
+  }
+  .slot.filled .slot-num, .slot.filled .slot-txt { display: none; }
+  .del-btn {
+    position: absolute; top: 5px; right: 5px;
+    background: rgba(0,0,0,0.75); border: 1px solid var(--accent); color: var(--accent);
+    font-family: 'Syne Mono', monospace; font-size: 0.55rem; padding: 2px 6px;
+    border-radius: 4px; cursor: pointer; z-index: 5; display: none;
+  }
+  .slot.filled .del-btn { display: block; }
+  input[type=file] { display: none; }
+
+  /* Progress */
+  .progress {
+    font-family: 'Syne Mono', monospace; font-size: 0.65rem;
+    color: var(--muted); text-align: center; letter-spacing: 0.08em;
+  }
+  .progress strong { color: var(--accent); }
+
+  /* Card */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .ctrl-label {
+    font-family: 'Syne Mono', monospace; font-size: 0.62rem;
+    color: var(--muted); letter-spacing: 0.1em; margin-bottom: 4px;
+  }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .slider-num {
+    font-family: 'Syne Mono', monospace; font-size: 0.72rem;
+    color: var(--accent); min-width: 36px; text-align: right;
+  }
+
+  /* Colors */
+  .colors { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .cp {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 2.5px solid transparent; cursor: pointer; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent; transition: transform 0.15s;
+  }
+  .cp:active { transform: scale(0.9); }
+  .cp.on { border-color: var(--accent); }
+  .cp-black { background: #000; outline: 1px solid #333; outline-offset: 3px; }
+  .custom-wrap { position: relative; width: 32px; height: 32px; flex-shrink: 0; }
+  .custom-wrap input[type=color] {
+    position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+  }
+  .custom-swatch {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px dashed #444;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: #444; pointer-events: none; transition: background 0.1s;
+  }
+
+  /* Result */
+  #resultWrap { display: none; flex-direction: column; gap: 10px; }
+  #resultWrap.show { display: flex; }
+  .result-label {
+    font-family: 'Syne Mono', monospace; font-size: 0.62rem;
+    color: var(--muted); letter-spacing: 0.1em;
+  }
+  #resultImg { width: 100%; border-radius: var(--radius); border: 1px solid var(--border); display: block; }
+  .save-hint {
+    background: #1a2a00; border: 1px solid #4a7a00; border-radius: 8px;
+    padding: 12px 14px; font-family: 'Syne Mono', monospace; font-size: 0.65rem;
+    color: #a0d000; line-height: 1.7; letter-spacing: 0.05em; text-align: center;
+  }
+  canvas { display: none; }
+</style>
+</head>
+<body>
+
+<h1>3枚 → <span>1枚</span></h1>
+<p class="sub">9:16 比率を保ったまま 1920×1080 に合成</p>
+
+<div class="slots">
+  <div class="slot" id="s0" onclick="pick(0)">
+    <div class="slot-num">1</div><div class="slot-txt">タップして<br>選択</div>
+    <button class="del-btn" onclick="del(event,0)">✕</button>
+    <input type="file" id="f0" accept="image/*" onchange="loaded(event,0)">
+  </div>
+  <div class="slot" id="s1" onclick="pick(1)">
+    <div class="slot-num">2</div><div class="slot-txt">タップして<br>選択</div>
+    <button class="del-btn" onclick="del(event,1)">✕</button>
+    <input type="file" id="f1" accept="image/*" onchange="loaded(event,1)">
+  </div>
+  <div class="slot" id="s2" onclick="pick(2)">
+    <div class="slot-num">3</div><div class="slot-txt">タップして<br>選択</div>
+    <button class="del-btn" onclick="del(event,2)">✕</button>
+    <input type="file" id="f2" accept="image/*" onchange="loaded(event,2)">
+  </div>
+</div>
+
+<p class="progress" id="prog">画像を選択してください <strong>0 / 3</strong></p>
+
+<div class="card">
+  <div>
+    <div class="ctrl-label">余白サイズ（四方均等）</div>
+    <div class="slider-row">
+      <input type="range" id="gap" min="0" max="120" value="20" oninput="update()">
+      <span class="slider-num" id="gapN">20px</span>
+    </div>
+  </div>
+  <div>
+    <div class="ctrl-label">余白カラー</div>
+    <div class="colors">
+      <div class="cp on" style="background:#fff" data-c="#ffffff" onclick="pickColor(this)"></div>
+      <div class="cp cp-black" data-c="#000000" onclick="pickColor(this)"></div>
+      <div class="cp" style="background:#888" data-c="#888888" onclick="pickColor(this)"></div>
+      <div class="cp" style="background:#f5c518" data-c="#f5c518" onclick="pickColor(this)"></div>
+      <div class="cp" style="background:#ff4757" data-c="#ff4757" onclick="pickColor(this)"></div>
+      <div class="custom-wrap">
+        <input type="color" id="cc" value="#ffffff" oninput="customColor()">
+        <div class="custom-swatch" id="cs">＋</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="resultWrap">
+  <div class="result-label">✅ 合成完了 — 1920 × 1080px</div>
+  <img id="resultImg" src="" alt="合成結果">
+  <div class="save-hint">📱 画像を<strong>長押し</strong>すると「写真に保存」が選べます</div>
+</div>
+
+<canvas id="cv" width="1920" height="1080"></canvas>
+
+<script>
+  const imgs = [null, null, null];
+  let gapColor = '#ffffff';
+
+  function pick(i) { document.getElementById('f'+i).click(); }
+
+  function loaded(e, i) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      const im = new Image();
+      im.onload = () => {
+        imgs[i] = im;
+        const slot = document.getElementById('s'+i);
+        let th = slot.querySelector('img.thumb');
+        if (!th) { th = document.createElement('img'); th.className='thumb'; slot.prepend(th); }
+        th.src = ev.target.result;
+        slot.classList.add('filled');
+        update();
+      };
+      im.src = ev.target.result;
+    };
+    r.readAsDataURL(file);
+  }
+
+  function del(e, i) {
+    e.stopPropagation();
+    imgs[i] = null;
+    const slot = document.getElementById('s'+i);
+    const th = slot.querySelector('img.thumb');
+    if (th) th.remove();
+    slot.classList.remove('filled');
+    document.getElementById('f'+i).value = '';
+    update();
+  }
+
+  function pickColor(el) {
+    gapColor = el.dataset.c;
+    document.querySelectorAll('.cp').forEach(p => p.classList.remove('on'));
+    el.classList.add('on');
+    update();
+  }
+
+  function customColor() {
+    gapColor = document.getElementById('cc').value;
+    document.getElementById('cs').style.background = gapColor;
+    document.querySelectorAll('.cp').forEach(p => p.classList.remove('on'));
+    update();
+  }
+
+  function update() {
+    const v = parseInt(document.getElementById('gap').value);
+    document.getElementById('gapN').textContent = v + 'px';
+
+    const filled = imgs.filter(Boolean).length;
+    const prog = document.getElementById('prog');
+    if (filled < 3) {
+      prog.innerHTML = `画像を選択してください <strong>${filled} / 3</strong>`;
+      document.getElementById('resultWrap').classList.remove('show');
+      return;
+    }
+    prog.innerHTML = `3枚選択済み <strong>✓</strong>`;
+    render();
+  }
+
+  function render() {
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    const W = 1920, H = 1080;
+    const pad = parseInt(document.getElementById('gap').value);
+
+    // 背景塗り
+    ctx.fillStyle = gapColor;
+    ctx.fillRect(0, 0, W, H);
+
+    // 利用可能エリア（四方にpad、画像間にもpad）
+    // 3枚横並び: 左pad + img + pad + img + pad + img + 右pad
+    // 上下: 上pad + img + 下pad
+    const availW = W - pad * 4; // 左右外側2 + 画像間2 = 4
+    const availH = H - pad * 2; // 上下
+
+    // 9:16 の比率を維持しながら availW/3 × availH に収める
+    const slotW = availW / 3;
+    const slotH = availH;
+
+    // 9:16 → imgW/imgH = 9/16
+    const targetAspect = 9 / 16;
+    let imgW, imgH;
+    if (slotW / slotH > targetAspect) {
+      // スロットが横長すぎる → 高さ基準
+      imgH = slotH;
+      imgW = imgH * targetAspect;
+    } else {
+      // スロットが縦長 → 幅基準
+      imgW = slotW;
+      imgH = imgW / targetAspect;
+    }
+
+    imgs.forEach((img, i) => {
+      // スロット左上
+      const slotX = pad + i * (slotW + pad);
+      const slotY = pad;
+
+      // スロット内で中央揃え
+      const dx = slotX + (slotW - imgW) / 2;
+      const dy = slotY + (slotH - imgH) / 2;
+
+      // object-fit: cover でトリミング
+      const ia = img.width / img.height;
+      const ba = imgW / imgH;
+      let sx, sy, sw, sh;
+      if (ia > ba) {
+        sh = img.height; sw = sh * ba; sy = 0; sx = (img.width - sw) / 2;
+      } else {
+        sw = img.width; sh = sw / ba; sx = 0; sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, dx, dy, imgW, imgH);
+    });
+
+    const dataURL = cv.toDataURL('image/png');
+    const ri = document.getElementById('resultImg');
+    ri.src = dataURL;
+    document.getElementById('resultWrap').classList.add('show');
+    setTimeout(() => ri.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+
+  update();
+</script>
+</body>
+</html>
